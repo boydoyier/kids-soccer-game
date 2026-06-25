@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>⚽ Soccer Catch!</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #1b5e20;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ═══ START SCREEN ═══ */
+    #start-screen {
+      position: fixed; inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(160deg, #1a472a 0%, #2e7d32 50%, #1b5e20 100%);
+      color: white;
+      z-index: 20;
+      padding: 20px;
+    }
+
+    .game-title {
+      font-size: clamp(2.4rem, 10vw, 4rem);
+      font-weight: 900;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 2px 0 #000;
+      letter-spacing: -1px;
+      margin-bottom: 6px;
+      animation: titleFloat 2.4s ease-in-out infinite alternate;
+    }
+    @keyframes titleFloat {
+      from { transform: translateY(0) rotate(-1deg); }
+      to   { transform: translateY(-10px) rotate(1deg); }
+    }
+
+    .game-subtitle {
+      font-size: clamp(0.95rem, 4vw, 1.3rem);
+      opacity: 0.85;
+      margin-bottom: 36px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .choose-label {
+      font-size: clamp(0.95rem, 4vw, 1.2rem);
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-bottom: 18px;
+    }
+
+    .char-grid {
+      display: flex;
+      gap: clamp(10px, 3vw, 22px);
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 520px;
+      width: 100%;
+    }
+
+    .char-card {
+      background: rgba(255,255,255,0.1);
+      border: 3px solid rgba(255,255,255,0.2);
+      border-radius: 24px;
+      padding: clamp(18px, 4vw, 28px) clamp(14px, 3vw, 24px);
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+      flex: 1;
+      min-width: 95px;
+      max-width: 155px;
+    }
+    .char-card[data-char="agnes"] { border-color: rgba(249,  98,145,0.6); }
+    .char-card[data-char="johan"] { border-color: rgba(100,181,246,0.6); }
+    .char-card[data-char="paul"]  { border-color: rgba(129,199,132,0.6); }
+
+    .char-card:hover, .char-card:active {
+      transform: scale(1.08) translateY(-5px);
+      background: rgba(255,255,255,0.2);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.35);
+    }
+
+    .char-emoji { font-size: clamp(2.8rem, 9vw, 4.2rem); line-height: 1.1; margin-bottom: 8px; }
+    .char-name  { font-size: clamp(1.05rem, 3.5vw, 1.35rem); font-weight: 800; margin-bottom: 3px; }
+    .char-age   { font-size: clamp(0.75rem, 2.5vw, 0.9rem); opacity: 0.65; margin-bottom: 10px; }
+    .char-badge {
+      display: inline-block;
+      font-size: clamp(0.68rem, 2vw, 0.82rem);
+      font-weight: 700;
+      padding: 4px 11px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.18);
+    }
+
+    /* ═══ CANVAS ═══ */
+    #canvas-wrap {
+      position: fixed; inset: 0;
+      display: none;
+    }
+    #game-canvas {
+      width: 100%; height: 100%;
+      display: block;
+    }
+
+    /* ═══ GAME OVER ═══ */
+    #gameover-screen {
+      position: fixed; inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.88);
+      color: white;
+      z-index: 20;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .go-trophy { font-size: clamp(3.5rem, 14vw, 5.5rem); margin-bottom: 12px; animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes popIn { from { transform: scale(0) rotate(-30deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+
+    .go-title  { font-size: clamp(2rem, 8vw, 3.2rem); font-weight: 900; margin-bottom: 6px; }
+    .go-player { font-size: clamp(1rem, 4vw, 1.25rem); opacity: 0.75; margin-bottom: 22px; }
+    .go-score  { font-size: clamp(2rem, 8vw, 3rem); font-weight: 700; color: #ffeb3b; margin-bottom: 6px; }
+    .go-best   { font-size: clamp(0.88rem, 3vw, 1.05rem); opacity: 0.65; margin-bottom: 32px; }
+
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+    .go-btn {
+      border: none;
+      border-radius: 50px;
+      padding: clamp(12px, 3vw, 17px) clamp(22px, 6vw, 44px);
+      font-size: clamp(1rem, 3.5vw, 1.25rem);
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s;
+      box-shadow: 0 5px 16px rgba(0,0,0,0.35);
+      color: white;
+    }
+    .go-btn:active { transform: scale(0.94); }
+    .go-btn.green { background: linear-gradient(135deg,#43a047,#2e7d32); }
+    .go-btn.blue  { background: linear-gradient(135deg,#1976d2,#0d47a1); }
+  </style>
+</head>
+<body>
+
+<!-- ═══ START SCREEN ═══ -->
+<div id="start-screen">
+  <div class="game-title">⚽ Soccer Catch!</div>
+  <div class="game-subtitle">Catch the falling soccer balls!</div>
+  <div class="choose-label">Who's playing?</div>
+  <div class="char-grid" id="char-grid">
+    <div class="char-card" data-char="agnes">
+      <div class="char-emoji">👧</div>
+      <div class="char-name">Agnes</div>
+      <div class="char-age">Age 11</div>
+      <div class="char-badge">⚡ Challenge</div>
+    </div>
+    <div class="char-card" data-char="johan">
+      <div class="char-emoji">🧒</div>
+      <div class="char-name">Johan</div>
+      <div class="char-age">Age 9</div>
+      <div class="char-badge">⚽ Normal</div>
+    </div>
+    <div class="char-card" data-char="paul">
+      <div class="char-emoji">👦</div>
+      <div class="char-name">Paul</div>
+      <div class="char-age">Age 5</div>
+      <div class="char-badge">🌟 Easy</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GAME CANVAS ═══ -->
+<div id="canvas-wrap">
+  <canvas id="game-canvas"></canvas>
+</div>
+
+<!-- ═══ GAME OVER ═══ -->
+<div id="gameover-screen">
+  <div class="go-trophy" id="go-trophy">🎉</div>
+  <div class="go-title"  id="go-title">Game Over!</div>
+  <div class="go-player" id="go-player"></div>
+  <div class="go-score"  id="go-score"></div>
+  <div class="go-best"   id="go-best"></div>
+  <div class="btn-row">
+    <button class="go-btn green" id="btn-again">▶ Play Again</button>
+    <button class="go-btn blue"  id="btn-change">⇄ Change Player</button>
+  </div>
+</div>
+
+<script>
+// ── roundRect polyfill ──────────────────────────────────────────────────────
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r) {
+    r = Math.min(r, w/2, h/2);
+    this.beginPath();
+    this.moveTo(x+r,y);
+    this.arcTo(x+w,y,   x+w,y+h, r);
+    this.arcTo(x+w,y+h, x,  y+h, r);
+    this.arcTo(x,  y+h, x,  y,   r);
+    this.arcTo(x,  y,   x+w,y,   r);
+    this.closePath();
+  };
+}
+
+// ── character definitions ───────────────────────────────────────────────────
+const CHARS = {
+  agnes: {
+    name:'Agnes', emoji:'👧',
+    color:'#c2185b',   netTop:'#e91e8c',   netFill:'#f48fb1',
+    catcherW:90,  catcherH:42,
+    speedMin:2.6, speedMax:7.0,
+    spawnMs:1050, lives:3, ballR:18,
+    speedGrow:0.15,
+    touchMode:'drag',
+    showGuide:false,
+    zones:[0.10,0.22,0.35,0.50,0.65,0.78,0.90]
+  },
+  johan: {
+    name:'Johan', emoji:'🧒',
+    color:'#1565c0',   netTop:'#1976d2',   netFill:'#90caf9',
+    catcherW:104, catcherH:46,
+    speedMin:2.0, speedMax:5.2,
+    spawnMs:1350, lives:3, ballR:18,
+    speedGrow:0.09,
+    touchMode:'drag',
+    showGuide:false,
+    zones:[0.15,0.33,0.50,0.67,0.85]
+  },
+  paul: {
+    name:'Paul',  emoji:'👦',
+    color:'#2e7d32',   netTop:'#388e3c',   netFill:'#a5d6a7',
+    catcherW:148, catcherH:58,
+    speedMin:0.75,speedMax:1.9,
+    spawnMs:2300, lives:5, ballR:28,
+    speedGrow:0,
+    touchMode:'follow',       // catcher follows finger directly
+    showGuide:true,           // arrows show where balls will land
+    zones:[0.30,0.50,0.70]
+  }
+};
+
+// ── canvas / context ────────────────────────────────────────────────────────
+const canvas = document.getElementById('game-canvas');
+const ctx    = canvas.getContext('2d');
+let W=0, H=0, DPR=1;
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W   = window.innerWidth;
+  H   = window.innerHeight;
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+  if (catcher && char) catcher.y = H - 95;
+}
+window.addEventListener('resize', resize);
+
+// ── game state ──────────────────────────────────────────────────────────────
+let char=null, state='select';
+let score=0, lives=0;
+let balls=[], particles=[];
+let catcher = { x:0, y:0 };
+let beltOff=0, spawnTimer=0;
+let countdown=3, cdTimer=0;
+let catchFlash=0;
+let shake = { x:0, y:0, t:0 };
+let raf=null, lastTs=0;
+let hiScores={};
+
+try { hiScores = JSON.parse(localStorage.getItem('sc_hi')||'{}'); } catch(_){}
+
+// ── input ───────────────────────────────────────────────────────────────────
+const keys = { left:false, right:false };
+let touchX=null, isDrag=false;
+
+window.addEventListener('keydown', e=>{
+  if(['ArrowLeft','a','A'].includes(e.key))  keys.left=true;
+  if(['ArrowRight','d','D'].includes(e.key)) keys.right=true;
+});
+window.addEventListener('keyup', e=>{
+  if(['ArrowLeft','a','A'].includes(e.key))  keys.left=false;
+  if(['ArrowRight','d','D'].includes(e.key)) keys.right=false;
+});
+
+canvas.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  if(state!=='playing') return;
+  const t=e.touches[0];
+  touchX=t.clientX; isDrag=false;
+  if(char.touchMode==='follow')
+    catcher.x = clamp(t.clientX, char.catcherW/2, W-char.catcherW/2);
+},{passive:false});
+
+canvas.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  if(state!=='playing') return;
+  const t=e.touches[0];
+  if(char.touchMode==='follow'){
+    catcher.x = clamp(t.clientX, char.catcherW/2, W-char.catcherW/2);
+  } else {
+    if(touchX!==null) catcher.x += t.clientX - touchX;
+    catcher.x = clamp(catcher.x, char.catcherW/2, W-char.catcherW/2);
+  }
+  touchX=t.clientX; isDrag=true;
+},{passive:false});
+
+canvas.addEventListener('touchend', e=>{
+  e.preventDefault();
+  // Tap (no drag): nudge catcher toward tap side
+  if(!isDrag && state==='playing' && char.touchMode==='drag'){
+    const t=e.changedTouches[0];
+    const dir = t.clientX < W/2 ? -1 : 1;
+    catcher.x = clamp(catcher.x + dir*60, char.catcherW/2, W-char.catcherW/2);
+  }
+  touchX=null;
+},{passive:false});
+
+// ── UI wiring ───────────────────────────────────────────────────────────────
+document.getElementById('char-grid').addEventListener('click', e=>{
+  const card = e.target.closest('[data-char]');
+  if(card) startGame(card.dataset.char);
+});
+document.getElementById('btn-again' ).addEventListener('click', ()=>startGame(char.key));
+document.getElementById('btn-change').addEventListener('click', ()=>{
+  hide('gameover-screen'); hide('canvas-wrap');
+  show('start-screen','flex');
+  if(raf){ cancelAnimationFrame(raf); raf=null; }
+  char=null;
+});
+
+// ── helpers ─────────────────────────────────────────────────────────────────
+const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const rnd   = (a,b)=>a+Math.random()*(b-a);
+function show(id,d='block'){ document.getElementById(id).style.display=d; }
+function hide(id)           { document.getElementById(id).style.display='none'; }
+
+// ── game init ────────────────────────────────────────────────────────────────
+function startGame(key){
+  char = { ...CHARS[key], key };
+  hide('start-screen'); hide('gameover-screen'); show('canvas-wrap');
+
+  resize();
+  score=0; lives=char.lives;
+  balls=[]; particles=[];
+  spawnTimer=0; beltOff=0;
+  countdown=3; cdTimer=1;
+  catchFlash=0; shake.t=0;
+  state='countdown';
+  catcher.x=W/2; catcher.y=H-95;
+
+  if(raf) cancelAnimationFrame(raf);
+  lastTs=performance.now();
+  raf=requestAnimationFrame(loop);
+}
+
+// ── loop ─────────────────────────────────────────────────────────────────────
+function loop(ts){
+  const dt = Math.min((ts-lastTs)/1000, 0.05);
+  lastTs=ts;
+  update(dt);
+  draw();
+  raf=requestAnimationFrame(loop);
+}
+
+// ── update ───────────────────────────────────────────────────────────────────
+const KBSPEED=490;
+
+function update(dt){
+  beltOff=(beltOff+55*dt)%44;
+  catchFlash=Math.max(0,catchFlash-dt*3.5);
+
+  if(shake.t>0){
+    shake.t-=dt;
+    shake.x=(Math.random()-0.5)*9*(shake.t/0.28);
+    shake.y=(Math.random()-0.5)*9*(shake.t/0.28);
+  } else { shake.x=shake.y=0; }
+
+  // countdown
+  if(state==='countdown'){
+    cdTimer-=dt;
+    if(cdTimer<=0){
+      countdown--;
+      if(countdown<0) state='playing';
+      else cdTimer = countdown===0 ? 0.55 : 1.0;
+    }
+    return;
+  }
+  if(state!=='playing') return;
+
+  // move catcher (keyboard)
+  if(keys.left)  catcher.x -= KBSPEED*dt;
+  if(keys.right) catcher.x += KBSPEED*dt;
+  catcher.x = clamp(catcher.x, char.catcherW/2, W-char.catcherW/2);
+
+  // spawn
+  spawnTimer-=dt;
+  if(spawnTimer<=0){
+    const lvl   = Math.floor(score/80);
+    const extra = lvl * char.speedGrow;
+    const zone  = char.zones[Math.floor(Math.random()*char.zones.length)];
+    balls.push({
+      x: zone*W,
+      y: -char.ballR-5,
+      r: char.ballR,
+      spd: rnd(char.speedMin+extra, char.speedMax+extra),
+      rot: rnd(-0.5,0.5),
+      rotS: rnd(-4,4),
+    });
+    const prog = clamp(score/320,0,0.38);
+    spawnTimer = (char.spawnMs/1000)*(1-prog);
+  }
+
+  // update balls
+  const catchTop = catcher.y - char.catcherH*0.5;
+  const hw       = char.catcherW/2;
+
+  for(let i=balls.length-1; i>=0; i--){
+    const b=balls[i];
+    b.y  += b.spd*60*dt;
+    b.rot+= b.rotS*dt;
+
+    const dx=Math.abs(b.x-catcher.x);
+    const dy=b.y-catchTop;
+
+    // catch
+    if(dx < hw+b.r*0.35 && dy > -b.r*0.5 && dy < char.catcherH+b.r*0.5){
+      score+=10;
+      catchFlash=1;
+      spawnCatch(b.x, catchTop);
+      balls.splice(i,1);
+      continue;
+    }
+    // miss
+    if(b.y-b.r > H){
+      lives--;
+      shake.t=0.28;
+      spawnMiss(b.x, H-30);
+      balls.splice(i,1);
+      if(lives<=0){ state='gameover'; setTimeout(showGameOver,600); }
+    }
+  }
+
+  // update particles
+  for(let i=particles.length-1; i>=0; i--){
+    const p=particles[i];
+    p.x +=p.vx*dt*60;
+    p.y +=p.vy*dt*60;
+    p.vy+=0.22*dt*60;
+    p.life-=dt;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+
+function spawnCatch(x,y){
+  const cols=['#ffeb3b','#ff9800','#e91e63','#00bcd4','#8bc34a','#fff','#7c4dff'];
+  for(let i=0;i<15;i++){
+    const a=rnd(0,Math.PI*2), spd=rnd(2.5,5.5), ml=rnd(0.5,0.9);
+    particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-3.5,
+      life:ml,maxLife:ml,color:cols[i%cols.length],r:rnd(3,7),text:null});
+  }
+  particles.push({x,y:y-16,vx:0,vy:-1.8,life:0.85,maxLife:0.85,color:'#fff',r:0,text:'⭐'});
+}
+
+function spawnMiss(x,y){
+  for(let i=0;i<8;i++){
+    const a=Math.PI+rnd(-0.9,0.9);
+    particles.push({x,y,vx:Math.cos(a)*rnd(1,3.5),vy:Math.sin(a)*2-1,
+      life:0.55,maxLife:0.55,color:'#ef5350',r:rnd(4,9),text:null});
+  }
+  particles.push({x,y:y-8,vx:0,vy:-1.2,life:0.75,maxLife:0.75,color:'#fff',r:0,text:'💥'});
+}
+
+// ── draw ─────────────────────────────────────────────────────────────────────
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR, shake.x, shake.y);
+
+  drawBg();
+  drawBelt();
+  if(char && char.showGuide && state==='playing') drawGuides();
+  for(const b of balls) drawBall(b);
+  if(char && (state==='playing'||state==='gameover')) drawCatcher();
+  drawParticles();
+  drawHUD();
+  if(state==='countdown') drawCountdown();
+}
+
+function drawBg(){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,  '#1b5e20');
+  g.addColorStop(0.5,'#2e7d32');
+  g.addColorStop(1,  '#1a472a');
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,W,H);
+
+  // field stripes
+  const sh=H/8;
+  for(let i=0;i<8;i++){
+    if(i%2===0){
+      ctx.fillStyle='rgba(0,0,0,0.06)';
+      ctx.fillRect(0,i*sh,W,sh);
+    }
+  }
+
+  // field markings
+  ctx.strokeStyle='rgba(255,255,255,0.11)';
+  ctx.lineWidth=2;
+  // center line
+  ctx.beginPath(); ctx.moveTo(0,H*0.5); ctx.lineTo(W,H*0.5); ctx.stroke();
+  // center circle
+  ctx.beginPath(); ctx.arc(W/2,H*0.5,Math.min(W,H)*0.18,0,Math.PI*2); ctx.stroke();
+  // goal area at bottom
+  const gw=W*0.55, gx=(W-gw)/2;
+  ctx.strokeRect(gx, H-46, gw, 46);
+}
+
+function drawBelt(){
+  const bh=58, y=0;
+
+  // shadow below belt
+  const sg=ctx.createLinearGradient(0,bh,0,bh+12);
+  sg.addColorStop(0,'rgba(0,0,0,0.4)');
+  sg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=sg; ctx.fillRect(0,bh,W,12);
+
+  // belt body
+  ctx.fillStyle='#37474f'; ctx.fillRect(0,y,W,bh);
+
+  // animated chevron pattern
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0,y,W,bh); ctx.clip();
+  for(let x=-44+beltOff; x<W+44; x+=44){
+    ctx.fillStyle='rgba(255,255,255,0.045)';
+    ctx.beginPath();
+    ctx.moveTo(x,y); ctx.lineTo(x+24,y); ctx.lineTo(x+24-10,y+bh); ctx.lineTo(x-10,y+bh);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+
+  // belt guide rails
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,y+bh*0.28); ctx.lineTo(W,y+bh*0.28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,y+bh*0.72); ctx.lineTo(W,y+bh*0.72); ctx.stroke();
+
+  // belt edge
+  ctx.strokeStyle='#546e7a'; ctx.lineWidth=3;
+  ctx.strokeRect(0,y,W,bh);
+
+  // launcher chutes
+  if(char){
+    for(const zone of char.zones){
+      const cx=zone*W;
+      ctx.fillStyle='rgba(0,0,0,0.5)';
+      ctx.beginPath(); ctx.arc(cx,bh,11,0,Math.PI); ctx.fill();
+      ctx.fillStyle='#263238';
+      ctx.beginPath(); ctx.arc(cx,bh,7,0,Math.PI); ctx.fill();
+    }
+  }
+
+  // label
+  ctx.fillStyle='rgba(255,255,255,0.45)';
+  ctx.font='bold 12px Arial';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('⚽  B A L L   L A U N C H E R  ⚽', W/2, bh/2);
+}
+
+function drawGuides(){
+  // Draw arrows at catcher level showing where each ball will land
+  for(const b of balls){
+    if(b.y < H*0.45) continue;
+    const alpha = clamp((b.y-H*0.45)/(H*0.28), 0, 0.85);
+    const catchTop = catcher.y - char.catcherH*0.5;
+    const ax=b.x, ay=catchTop-16;
+
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle='#ffee58';
+    ctx.beginPath();
+    ctx.moveTo(ax, ay+14); ctx.lineTo(ax-11,ay); ctx.lineTo(ax+11,ay);
+    ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle='rgba(255,238,88,0.35)';
+    ctx.lineWidth=1.5; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(b.x,b.y+b.r); ctx.lineTo(ax,ay+2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawBall(b){
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.rotate(b.rot);
+
+  // shadow
+  ctx.globalAlpha=0.22;
+  ctx.fillStyle='#000';
+  ctx.beginPath(); ctx.ellipse(5,6,b.r*0.82,b.r*0.52,0,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha=1;
+
+  // ball emoji
+  ctx.font=`${b.r*2.15}px sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('⚽',0,0);
+  ctx.restore();
+}
+
+function drawCatcher(){
+  const x=catcher.x, y=catcher.y;
+  const hw=char.catcherW/2, th=char.catcherH;
+  const topY=y-th*0.5;
+
+  // glow on catch
+  if(catchFlash>0){
+    ctx.globalAlpha=catchFlash*0.55;
+    const rg=ctx.createRadialGradient(x,y,5,x,y,hw+28);
+    rg.addColorStop(0,char.netTop+'cc');
+    rg.addColorStop(1,'transparent');
+    ctx.fillStyle=rg;
+    ctx.beginPath(); ctx.arc(x,y,hw+28,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+  }
+
+  // character emoji
+  const eSize=Math.max(38, hw*0.88);
+  ctx.font=`${eSize}px sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='bottom';
+  ctx.fillText(char.emoji, x, topY-3);
+
+  // net (trapezoid)
+  ctx.beginPath();
+  ctx.moveTo(x-hw,    topY);
+  ctx.lineTo(x+hw,    topY);
+  ctx.lineTo(x+hw*0.6,topY+th);
+  ctx.lineTo(x-hw*0.6,topY+th);
+  ctx.closePath();
+
+  const ng=ctx.createLinearGradient(x,topY,x,topY+th);
+  ng.addColorStop(0,char.netTop);
+  ng.addColorStop(1,char.netFill);
+  ctx.fillStyle=ng; ctx.fill();
+
+  // net grid lines
+  ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1.5;
+  const cols=Math.floor(hw/11);
+  for(let i=1;i<cols*2;i++){
+    const fx=i/(cols*2);
+    const tx=x-hw+fw(fx)*2*hw, bx=x-hw*0.6+fw(fx)*2*hw*0.6;
+    ctx.beginPath(); ctx.moveTo(tx,topY); ctx.lineTo(bx,topY+th); ctx.stroke();
+  }
+  function fw(f){ return f; }
+  for(let r=1;r<3;r++){
+    const ry=topY+th*r/3;
+    const rx=hw*0.6+(hw-hw*0.6)*(1-r/3);
+    ctx.beginPath(); ctx.moveTo(x-rx,ry); ctx.lineTo(x+rx,ry); ctx.stroke();
+  }
+
+  // net outline
+  ctx.strokeStyle=char.color; ctx.lineWidth=3.5;
+  ctx.beginPath();
+  ctx.moveTo(x-hw,    topY);
+  ctx.lineTo(x+hw,    topY);
+  ctx.lineTo(x+hw*0.6,topY+th);
+  ctx.lineTo(x-hw*0.6,topY+th);
+  ctx.closePath(); ctx.stroke();
+
+  // name tag
+  ctx.font='bold 13px Arial';
+  const tw=ctx.measureText(char.name).width;
+  ctx.fillStyle='rgba(0,0,0,0.55)';
+  ctx.roundRect(x-tw/2-9, topY+th+6, tw+18, 22, 8);
+  ctx.fill();
+  ctx.fillStyle='white'; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText(char.name, x, topY+th+9);
+}
+
+function drawParticles(){
+  for(const p of particles){
+    const a=p.life/p.maxLife;
+    ctx.globalAlpha=a;
+    if(p.text){
+      const sz=20+(1-a)*14;
+      ctx.font=`${sz}px sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(p.text,p.x,p.y);
+    } else {
+      ctx.fillStyle=p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawHUD(){
+  if(!char) return;
+  ctx.textBaseline='alphabetic';
+
+  // Score box
+  ctx.fillStyle='rgba(0,0,0,0.52)';
+  ctx.roundRect(10,62,118,56,14); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.5)';
+  ctx.font='bold 11px Arial'; ctx.textAlign='left';
+  ctx.fillText('SCORE',22,79);
+  ctx.fillStyle='#ffeb3b';
+  ctx.font=`bold ${score>=1000?19:25}px Arial`;
+  ctx.fillText(score, 22, 108);
+
+  // Lives
+  const lp=10, lw=char.lives*30+lp*2;
+  ctx.fillStyle='rgba(0,0,0,0.52)';
+  ctx.roundRect(W-lw-10,62,lw,56,14); ctx.fill();
+  ctx.font='22px sans-serif'; ctx.textBaseline='middle';
+  for(let i=0;i<char.lives;i++){
+    ctx.globalAlpha = i<lives ? 1 : 0.18;
+    ctx.fillText('❤️', W-lp-22-i*30, 90);
+  }
+  ctx.globalAlpha=1; ctx.textBaseline='alphabetic';
+
+  // Player name (top center)
+  const label=`${char.emoji} ${char.name}`;
+  ctx.font='bold 15px Arial';
+  const lw2=ctx.measureText(label).width;
+  ctx.fillStyle='rgba(0,0,0,0.52)';
+  ctx.roundRect(W/2-lw2/2-12,61,lw2+24,34,12); ctx.fill();
+  ctx.fillStyle='white'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(label,W/2,78);
+  ctx.textBaseline='alphabetic';
+}
+
+function drawCountdown(){
+  ctx.fillStyle='rgba(0,0,0,0.68)';
+  ctx.fillRect(0,0,W,H);
+
+  const num=countdown===0 ? 'GO!' : String(countdown);
+  const sz=Math.min(W*0.44, H*0.34);
+
+  ctx.font=`900 ${sz}px Arial`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.fillText(num, W/2+4, H/2+4);
+  // text
+  ctx.fillStyle=countdown===0 ? '#69f0ae' : '#ffffff';
+  ctx.fillText(num, W/2, H/2);
+
+  if(countdown>0){
+    ctx.font=`bold ${sz*0.17}px Arial`;
+    ctx.fillStyle='rgba(255,255,255,0.75)';
+    ctx.fillText('Get Ready!', W/2, H/2+sz*0.46);
+  }
+}
+
+// ── game over ────────────────────────────────────────────────────────────────
+function showGameOver(){
+  hide('canvas-wrap');
+  const key=char.key, prev=hiScores[key]||0, isNew=score>prev;
+  if(isNew){ hiScores[key]=score; try{localStorage.setItem('sc_hi',JSON.stringify(hiScores));}catch(_){} }
+
+  let trophy, title;
+  if(score>=200)      { trophy='🏆'; title='Champion!'; }
+  else if(score>=100) { trophy='🌟'; title='Excellent!'; }
+  else if(score>=50)  { trophy='😄'; title='Good job!'; }
+  else                { trophy=char.emoji; title='Game Over!'; }
+
+  document.getElementById('go-trophy').textContent=trophy;
+  document.getElementById('go-title' ).textContent=title;
+  document.getElementById('go-player').textContent=`${char.emoji} ${char.name}`;
+  document.getElementById('go-score' ).textContent=`${score} points`;
+  document.getElementById('go-best'  ).textContent=
+    isNew ? '🎉 New personal best!' : `Best: ${hiScores[key]} pts`;
+
+  show('gameover-screen','flex');
+}
+
+// ── boot ─────────────────────────────────────────────────────────────────────
+resize();
+</script>
+</body>
+</html>
