@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>⚽ Soccer Catch!</title>
+  <title>⚽ Oyier World Cup!</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -160,24 +160,24 @@
 
 <!-- ═══ START SCREEN ═══ -->
 <div id="start-screen">
-  <div class="game-title">⚽ Soccer Catch!</div>
+  <div class="game-title">⚽ Oyier World Cup!</div>
   <div class="game-subtitle">Catch the falling soccer balls!</div>
   <div class="choose-label">Who's playing?</div>
   <div class="char-grid" id="char-grid">
     <div class="char-card" data-char="agnes">
-      <div class="char-emoji">👧</div>
+      <div class="char-emoji">👧🏾</div>
       <div class="char-name">Agnes</div>
       <div class="char-age">Age 11</div>
       <div class="char-badge">⚡ Challenge</div>
     </div>
     <div class="char-card" data-char="johan">
-      <div class="char-emoji">🧒</div>
+      <div class="char-emoji">🧒🏾</div>
       <div class="char-name">Johan</div>
       <div class="char-age">Age 9</div>
       <div class="char-badge">⚽ Normal</div>
     </div>
     <div class="char-card" data-char="paul">
-      <div class="char-emoji">👦</div>
+      <div class="char-emoji">👦🏾</div>
       <div class="char-name">Paul</div>
       <div class="char-age">Age 5</div>
       <div class="char-badge">🌟 Easy</div>
@@ -221,7 +221,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 // ── character definitions ───────────────────────────────────────────────────
 const CHARS = {
   agnes: {
-    name:'Agnes', emoji:'👧',
+    name:'Agnes', emoji:'👧🏾',
     color:'#c2185b',   netTop:'#e91e8c',   netFill:'#f48fb1',
     catcherW:90,  catcherH:42,
     speedMin:2.6, speedMax:7.0,
@@ -232,10 +232,10 @@ const CHARS = {
     zones:[0.10,0.22,0.35,0.50,0.65,0.78,0.90]
   },
   johan: {
-    name:'Johan', emoji:'🧒',
+    name:'Johan', emoji:'🧒🏾',
     color:'#1565c0',   netTop:'#1976d2',   netFill:'#90caf9',
     catcherW:104, catcherH:46,
-    speedMin:2.0, speedMax:5.2,
+    speedMin:2.6, speedMax:6.2,
     spawnMs:1350, lives:3, ballR:18,
     speedGrow:0.09,
     touchMode:'drag',
@@ -243,10 +243,10 @@ const CHARS = {
     zones:[0.15,0.33,0.50,0.67,0.85]
   },
   paul: {
-    name:'Paul',  emoji:'👦',
+    name:'Paul',  emoji:'👦🏾',
     color:'#2e7d32',   netTop:'#388e3c',   netFill:'#a5d6a7',
-    catcherW:148, catcherH:58,
-    speedMin:0.75,speedMax:1.9,
+    catcherW:130, catcherH:54,
+    speedMin:1.3, speedMax:2.8,
     spawnMs:2300, lives:5, ballR:28,
     speedGrow:0,
     touchMode:'follow',       // catcher follows finger directly
